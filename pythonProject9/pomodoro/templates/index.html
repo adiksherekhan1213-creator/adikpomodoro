@@ -1,0 +1,765 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    color-scheme: dark;
+    --bg: #000;
+    --white: #f5f5f5;
+    --muted: #666;
+    --track: #292929;
+}
+
+body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+}
+
+button {
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.fullscreen-btn {
+    position: fixed;
+    top: 22px;
+    right: 25px;
+    z-index: 20;
+    background: transparent;
+    border: 0;
+    color: #777;
+    font-size: 25px;
+}
+
+.fullscreen-btn:hover {
+    color: white;
+}
+
+/* POMODORO SCREEN */
+
+#pomodoroPage,
+#runningPage,
+#clockPage {
+    width: 100%;
+    height: 100vh;
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+}
+
+#pomodoroPage {
+    display: flex;
+}
+
+.timer-container {
+    width: min(92%, 600px);
+    text-align: center;
+}
+
+.mode-switch {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    margin-bottom: 48px;
+}
+
+.mode-btn {
+    background: transparent;
+    border: none;
+    color: #555;
+    font-size: 13px;
+    letter-spacing: 4px;
+}
+
+.mode-btn.active {
+    color: white;
+}
+
+.timer-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 34px;
+}
+
+.time-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-number {
+    font-size: clamp(90px, 14vw, 150px);
+    font-weight: 300;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.time-label {
+    margin-top: 15px;
+    color: #555;
+    font-size: 10px;
+    letter-spacing: 4px;
+}
+
+.time-separator {
+    align-self: flex-start;
+    font-size: clamp(65px, 9vw, 100px);
+    font-weight: 200;
+    line-height: 1;
+    color: #555;
+}
+
+.adjust-controls {
+    display: flex;
+    justify-content: center;
+    gap: 65px;
+    margin-bottom: 35px;
+}
+
+.adjust-group {
+    display: flex;
+    gap: 22px;
+}
+
+.adjust-btn {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 23px;
+    padding: 5px;
+}
+
+.adjust-btn:hover {
+    color: white;
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.action-btn {
+    min-width: 130px;
+    padding: 14px 24px;
+    border: 1px solid #292929;
+    border-radius: 7px;
+    background: #111;
+    color: #ddd;
+    font-size: 11px;
+    letter-spacing: 3px;
+}
+
+.action-btn.primary {
+    background: #eee;
+    border-color: #eee;
+    color: #000;
+}
+
+.action-btn:hover {
+    opacity: .8;
+}
+
+/* RUNNING SCREEN */
+
+#runningPage {
+    display: none;
+    flex-direction: column;
+    gap: 38px;
+}
+
+.circle-wrap {
+    width: min(66vw, 410px);
+    aspect-ratio: 1;
+    position: relative;
+}
+
+.progress-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+    transform: rotate(-90deg);
+}
+
+.progress-track,
+.progress-ring {
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.progress-track {
+    stroke: var(--track);
+}
+
+.progress-ring {
+    stroke: var(--white);
+    stroke-linecap: round;
+    transition: stroke-dashoffset .35s linear;
+}
+
+.circle-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.running-time {
+    font-size: clamp(38px, 6vw, 60px);
+    font-weight: 300;
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.running-mode {
+    color: #999;
+    font-size: 11px;
+    letter-spacing: 4px;
+}
+
+.pause-btn {
+    padding: 13px 30px;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 7px;
+    color: #ccc;
+    font-size: 11px;
+    letter-spacing: 4px;
+}
+
+.pause-btn:hover {
+    border-color: #888;
+    color: white;
+}
+
+/* CLOCK SCREEN */
+
+#clockPage {
+    display: none;
+    background: #000;
+    text-align: center;
+}
+
+.clock-time {
+    color: #fff;
+    font-size: clamp(90px, 13vw, 190px);
+    font-weight: 400;
+    letter-spacing: -5px;
+    line-height: 1;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* SMALL SCREENS */
+
+@media (max-width: 600px) {
+    .fullscreen-btn {
+        top: 15px;
+        right: 17px;
+    }
+
+    .mode-switch {
+        margin-bottom: 38px;
+        gap: 25px;
+    }
+
+    .timer-display {
+        gap: 6px;
+    }
+
+    .time-number {
+        font-size: 22vw;
+    }
+
+    .time-separator {
+        font-size: 16vw;
+    }
+
+    .time-label {
+        font-size: 8px;
+        letter-spacing: 2px;
+    }
+
+    .adjust-controls {
+        gap: 35px;
+    }
+
+    .action-btn {
+        min-width: 110px;
+        padding: 13px 17px;
+    }
+
+    .circle-wrap {
+        width: min(78vw, 360px);
+    }
+
+    .running-time {
+        font-size: 38px;
+    }
+
+    .clock-time {
+        font-size: 13vw;
+        letter-spacing: -2px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<button class="fullscreen-btn" id="fullscreenBtn"
+        title="Fullscreen" aria-label="Toggle fullscreen">⛶</button>
+
+<!-- MAIN POMODORO PAGE -->
+
+<main id="pomodoroPage">
+    <div class="timer-container">
+
+        <div class="mode-switch">
+            <button class="mode-btn active" id="workMode">WORK</button>
+            <button class="mode-btn" id="breakMode">BREAK</button>
+        </div>
+
+        <div class="timer-display">
+            <div class="time-unit">
+                <span class="time-number" id="minutes">25</span>
+                <span class="time-label">MIN</span>
+            </div>
+
+            <span class="time-separator">:</span>
+
+            <div class="time-unit">
+                <span class="time-number" id="seconds">00</span>
+                <span class="time-label">SEC</span>
+            </div>
+        </div>
+
+        <div class="adjust-controls">
+            <div class="adjust-group">
+                <button class="adjust-btn" id="minusMinute">−</button>
+                <button class="adjust-btn" id="plusMinute">+</button>
+            </div>
+
+            <div class="adjust-group">
+                <button class="adjust-btn" id="minusSecond">−</button>
+                <button class="adjust-btn" id="plusSecond">+</button>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="action-btn primary" id="startBtn">START</button>
+            <button class="action-btn" id="resetBtn">RESET</button>
+        </div>
+    </div>
+</main>
+
+<!-- RUNNING SCREEN -->
+
+<section id="runningPage">
+    <div class="circle-wrap">
+        <svg class="progress-svg" viewBox="0 0 200 200"
+             aria-label="Timer progress">
+            <circle class="progress-track"
+                    cx="100" cy="100" r="96"></circle>
+
+            <circle class="progress-ring" id="progressRing"
+                    cx="100" cy="100" r="96"></circle>
+        </svg>
+
+        <div class="circle-center">
+            <div class="running-time" id="runningTime">25:00</div>
+            <div class="running-mode" id="runningMode">FOCUS</div>
+        </div>
+    </div>
+
+    <button class="pause-btn" id="pauseBtn">PAUSE</button>
+</section>
+
+<!-- CLOCK SCREEN -->
+
+<section id="clockPage">
+    <div class="clock-time" id="clockTime">00:00:00</div>
+</section>
+
+<script>
+const pomodoroPage = document.getElementById("pomodoroPage");
+const runningPage = document.getElementById("runningPage");
+const clockPage = document.getElementById("clockPage");
+
+const minutesEl = document.getElementById("minutes");
+const secondsEl = document.getElementById("seconds");
+const runningTimeEl = document.getElementById("runningTime");
+const runningModeEl = document.getElementById("runningMode");
+const clockTimeEl = document.getElementById("clockTime");
+const progressRing = document.getElementById("progressRing");
+
+const workModeBtn = document.getElementById("workMode");
+const breakModeBtn = document.getElementById("breakMode");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+const radius = 96;
+const circumference = 2 * Math.PI * radius;
+
+progressRing.style.strokeDasharray = circumference;
+progressRing.style.strokeDashoffset = 0;
+
+let mode = "work";
+let workDuration = 25 * 60;
+let breakDuration = 5 * 60;
+let remaining = workDuration;
+let timerInterval = null;
+let running = false;
+let currentPage = "pomodoro";
+
+/* GLASS-LIKE SOUND
+   Synthesized with Web Audio API.
+   No external MP3 file is required.
+*/
+
+let audioContext = null;
+
+function playTimerSound() {
+    try {
+        if (!audioContext) {
+            audioContext = new (
+                window.AudioContext || window.webkitAudioContext
+            )();
+        }
+
+        if (audioContext.state === "suspended") {
+            audioContext.resume();
+        }
+
+        const now = audioContext.currentTime;
+
+        /*
+         * Several resonant tones together create
+         * a glass-like "ting" sound.
+         */
+
+        const partials = [
+            { frequency: 1046.5, volume: 0.22, decay: 2.8 },
+            { frequency: 1318.5, volume: 0.18, decay: 2.5 },
+            { frequency: 1760.0, volume: 0.14, decay: 2.1 },
+            { frequency: 2093.0, volume: 0.10, decay: 1.8 },
+            { frequency: 2637.0, volume: 0.07, decay: 1.4 },
+            { frequency: 3520.0, volume: 0.04, decay: 1.0 }
+        ];
+
+        // First gentle glass strike
+        createGlassStrike(now, 1);
+
+        // Second strike, slightly later and softer
+        createGlassStrike(now + 0.17, 0.58);
+
+        function createGlassStrike(startTime, strikeVolume) {
+            partials.forEach((partial, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                oscillator.type = "sine";
+
+                const frequency = partial.frequency;
+
+                // Slightly detune the sound to make it feel more natural.
+                oscillator.frequency.setValueAtTime(
+                    frequency * (1 + index * 0.0007),
+                    startTime
+                );
+
+                // Very short attack like a glass being tapped.
+                gain.gain.setValueAtTime(0.0001, startTime);
+                gain.gain.linearRampToValueAtTime(
+                    partial.volume * strikeVolume,
+                    startTime + 0.006
+                );
+
+                // Long natural-like ringing decay.
+                gain.gain.exponentialRampToValueAtTime(
+                    0.0001,
+                    startTime + partial.decay
+                );
+
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+
+                oscillator.start(startTime);
+                oscillator.stop(startTime + partial.decay + 0.03);
+            });
+        }
+
+    } catch (error) {
+        console.log("Sound could not be played", error);
+    }
+}
+
+function formatTime(total) {
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+
+    return {
+        minutes: String(mins).padStart(2, "0"),
+        seconds: String(secs).padStart(2, "0")
+    };
+}
+
+function updateTimerDisplay() {
+    const time = formatTime(remaining);
+
+    minutesEl.textContent = time.minutes;
+    secondsEl.textContent = time.seconds;
+    runningTimeEl.textContent = `${time.minutes}:${time.seconds}`;
+
+    runningModeEl.textContent =
+        mode === "work" ? "FOCUS" : "BREAK";
+
+    const duration = mode === "work"
+        ? workDuration
+        : breakDuration;
+
+    const progress = duration > 0
+        ? remaining / duration
+        : 0;
+
+    progressRing.style.strokeDashoffset =
+        circumference * (1 - progress);
+}
+
+function setMode(newMode) {
+    mode = newMode;
+
+    workModeBtn.classList.toggle("active", mode === "work");
+    breakModeBtn.classList.toggle("active", mode === "break");
+
+    remaining = mode === "work" ? workDuration : breakDuration;
+
+    updateTimerDisplay();
+}
+
+function stopInterval() {
+    if (timerInterval !== null) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    running = false;
+}
+
+function showRunningScreen() {
+    currentPage = "running";
+    pomodoroPage.style.display = "none";
+    clockPage.style.display = "none";
+    runningPage.style.display = "flex";
+}
+
+function startTimer() {
+    if (running) return;
+
+    if (remaining <= 0) {
+        remaining = mode === "work" ? workDuration : breakDuration;
+    }
+
+    running = true;
+    showRunningScreen();
+    updateTimerDisplay();
+
+    timerInterval = setInterval(() => {
+        if (remaining > 0) {
+            remaining--;
+        }
+
+        updateTimerDisplay();
+
+        if (remaining <= 0) {
+            stopInterval();
+
+            // Play glass-like notification sound.
+            playTimerSound();
+
+            // Switch work and break automatically.
+            setMode(mode === "work" ? "break" : "work");
+
+            // Automatically start the next session.
+            startTimer();
+        }
+    }, 1000);
+}
+
+function pauseTimer() {
+    stopInterval();
+
+    currentPage = "pomodoro";
+    runningPage.style.display = "none";
+    clockPage.style.display = "none";
+    pomodoroPage.style.display = "flex";
+
+    updateTimerDisplay();
+}
+
+function resetTimer() {
+    stopInterval();
+
+    remaining = mode === "work" ? workDuration : breakDuration;
+
+    currentPage = "pomodoro";
+    runningPage.style.display = "none";
+    clockPage.style.display = "none";
+    pomodoroPage.style.display = "flex";
+
+    updateTimerDisplay();
+}
+
+workModeBtn.addEventListener("click", () => {
+    if (!running) setMode("work");
+});
+
+breakModeBtn.addEventListener("click", () => {
+    if (!running) setMode("break");
+});
+
+startBtn.addEventListener("click", startTimer);
+pauseBtn.addEventListener("click", pauseTimer);
+resetBtn.addEventListener("click", resetTimer);
+
+function adjustTime(amount) {
+    if (running) return;
+
+    remaining = Math.max(
+        0,
+        Math.min(99 * 60 + 59, remaining + amount)
+    );
+
+    if (mode === "work") {
+        workDuration = remaining;
+    } else {
+        breakDuration = remaining;
+    }
+
+    updateTimerDisplay();
+}
+
+document.getElementById("minusMinute")
+    .addEventListener("click", () => adjustTime(-60));
+
+document.getElementById("plusMinute")
+    .addEventListener("click", () => adjustTime(60));
+
+document.getElementById("minusSecond")
+    .addEventListener("click", () => adjustTime(-1));
+
+document.getElementById("plusSecond")
+    .addEventListener("click", () => adjustTime(1));
+
+// Live digital clock
+function updateClock() {
+    const now = new Date();
+
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+
+    clockTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+
+// Switch pages
+// Timer continues running when the clock page is opened.
+function showPage(page) {
+    currentPage = page;
+
+    pomodoroPage.style.display =
+        page === "pomodoro" && !running ? "flex" : "none";
+
+    clockPage.style.display =
+        page === "clock" ? "flex" : "none";
+
+    runningPage.style.display =
+        page === "pomodoro" && running ? "flex" : "none";
+}
+
+// Fullscreen
+document.getElementById("fullscreenBtn")
+    .addEventListener("click", async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+            } else {
+                await document.exitFullscreen();
+            }
+        } catch (error) {
+            console.log("Fullscreen unavailable", error);
+        }
+    });
+
+// Mac trackpad horizontal swipe
+let lastSwipeTime = 0;
+
+document.addEventListener("wheel", event => {
+    if (Math.abs(event.deltaX) < 35) return;
+    if (Math.abs(event.deltaX) < Math.abs(event.deltaY) * 1.2) return;
+
+    const now = Date.now();
+    if (now - lastSwipeTime < 700) return;
+
+    lastSwipeTime = now;
+
+    if (event.deltaX > 0) {
+        showPage("clock");
+    } else {
+        showPage("pomodoro");
+    }
+}, { passive: true });
+
+// Touch swipe for mobile
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener("touchstart", event => {
+    touchStartX = event.changedTouches[0].screenX;
+    touchStartY = event.changedTouches[0].screenY;
+}, { passive: true });
+
+document.addEventListener("touchend", event => {
+    const dx = event.changedTouches[0].screenX - touchStartX;
+    const dy = event.changedTouches[0].screenY - touchStartY;
+
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy)) return;
+
+    if (dx < 0) {
+        showPage("clock");
+    } else {
+        showPage("pomodoro");
+    }
+}, { passive: true });
+
+updateTimerDisplay();
+</script>
+
+</body>
+</html>
